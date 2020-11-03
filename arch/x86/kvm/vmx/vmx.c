@@ -28,6 +28,8 @@
 #include <linux/tboot.h>
 #include <linux/trace_events.h>
 #include <linux/entry-kvm.h>
+#include <linux/types.h>
+#include <linux/atomic.h>
 
 #include <asm/apic.h>
 #include <asm/asm.h>
@@ -47,7 +49,6 @@
 #include <asm/spec-ctrl.h>
 #include <asm/virtext.h>
 #include <asm/vmx.h>
-
 #include "capabilities.h"
 #include "cpuid.h"
 #include "evmcs.h"
@@ -65,6 +66,9 @@
 
 MODULE_AUTHOR("Qumranet");
 MODULE_LICENSE("GPL");
+
+extern atomic64_t no_of_exits;
+extern atomic64_t cpu_cycles;
 
 #ifdef MODULE
 static const struct x86_cpu_id vmx_cpu_id[] = {
@@ -5928,9 +5932,13 @@ void dump_vmcs(void)
  */
 static int vmx_handle_exit(struct kvm_vcpu *vcpu, fastpath_t exit_fastpath)
 {
+	uint64_t begin_time = rdtsc();
+
 	struct vcpu_vmx *vmx = to_vmx(vcpu);
 	u32 exit_reason = vmx->exit_reason;
 	u32 vectoring_info = vmx->idt_vectoring_info;
+
+	arch_atomic64_inc(&no_of_exits);
 
 	/*
 	 * Flush logged GPAs PML buffer, this will make dirty_bitmap more
@@ -6060,8 +6068,11 @@ static int vmx_handle_exit(struct kvm_vcpu *vcpu, fastpath_t exit_fastpath)
 
 	exit_reason = array_index_nospec(exit_reason,
 					 kvm_vmx_max_exit_handlers);
+
 	if (!kvm_vmx_exit_handlers[exit_reason])
 		goto unexpected_vmexit;
+
+	arch_atomic64_add(rdtsc() - begin_time, &cpu_cycles);
 
 	return kvm_vmx_exit_handlers[exit_reason](vcpu);
 

@@ -23,6 +23,8 @@
 #include "mmu.h"
 #include "trace.h"
 #include "pmu.h"
+#include <linux/types.h>
+#include <linux/atomic.h>
 
 /*
  * Unlike "struct cpuinfo_x86.x86_capability", kvm_cpu_caps doesn't need to be
@@ -30,6 +32,11 @@
  */
 u32 kvm_cpu_caps[NCAPINTS] __read_mostly;
 EXPORT_SYMBOL_GPL(kvm_cpu_caps);
+
+atomic64_t no_of_exits = ATOMIC64_INIT(0);
+EXPORT_SYMBOL(no_of_exits);
+atomic64_t cpu_cycles = ATOMIC64_INIT(0);
+EXPORT_SYMBOL(cpu_cycles);
 
 static u32 xstate_required_size(u64 xstate_bv, bool compacted)
 {
@@ -1108,7 +1115,18 @@ int kvm_emulate_cpuid(struct kvm_vcpu *vcpu)
 
 	eax = kvm_rax_read(vcpu);
 	ecx = kvm_rcx_read(vcpu);
-	kvm_cpuid(vcpu, &eax, &ebx, &ecx, &edx, false);
+
+	if(eax == 0x4FFFFFFF){
+		printk("eax is 0x4fffffff! Total number of exits is %lld\n", arch_atomic64_read(&no_of_exits));
+		eax = arch_atomic64_read(&no_of_exits);
+		ebx = (arch_atomic64_read(&cpu_cycles) >> 32);;	// move higher 32 bits to lower 32 bits position.
+		ecx = (arch_atomic64_read(&cpu_cycles) & 0xffffffff); // clear higher 32 bits.
+		edx = 0;
+	}
+	else{
+		kvm_cpuid(vcpu, &eax, &ebx, &ecx, &edx, false);
+	};
+
 	kvm_rax_write(vcpu, eax);
 	kvm_rbx_write(vcpu, ebx);
 	kvm_rcx_write(vcpu, ecx);
