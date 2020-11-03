@@ -67,7 +67,7 @@
 MODULE_AUTHOR("Qumranet");
 MODULE_LICENSE("GPL");
 
-extern atomic64_t no_of_exits;
+extern atomic_t no_of_exits;
 extern atomic64_t cpu_cycles;
 
 #ifdef MODULE
@@ -5938,7 +5938,7 @@ static int vmx_handle_exit(struct kvm_vcpu *vcpu, fastpath_t exit_fastpath)
 	u32 exit_reason = vmx->exit_reason;
 	u32 vectoring_info = vmx->idt_vectoring_info;
 
-	arch_atomic64_inc(&no_of_exits);
+	arch_atomic_inc(&no_of_exits);
 
 	/*
 	 * Flush logged GPAs PML buffer, this will make dirty_bitmap more

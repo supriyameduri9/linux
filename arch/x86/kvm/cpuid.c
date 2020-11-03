@@ -33,7 +33,7 @@
 u32 kvm_cpu_caps[NCAPINTS] __read_mostly;
 EXPORT_SYMBOL_GPL(kvm_cpu_caps);
 
-atomic64_t no_of_exits = ATOMIC64_INIT(0);
+atomic_t no_of_exits = ATOMIC_INIT(0);
 EXPORT_SYMBOL(no_of_exits);
 atomic64_t cpu_cycles = ATOMIC64_INIT(0);
 EXPORT_SYMBOL(cpu_cycles);
@@ -1117,8 +1117,8 @@ int kvm_emulate_cpuid(struct kvm_vcpu *vcpu)
 	ecx = kvm_rcx_read(vcpu);
 
 	if(eax == 0x4FFFFFFF){
-		printk("eax is 0x4fffffff! Total number of exits is %lld\n", arch_atomic64_read(&no_of_exits));
-		eax = arch_atomic64_read(&no_of_exits);
+		printk("eax is 0x4fffffff! Total number of exits is %d\n", arch_atomic_read(&no_of_exits));
+		eax = arch_atomic_read(&no_of_exits);
 		ebx = (arch_atomic64_read(&cpu_cycles) >> 32);;	// move higher 32 bits to lower 32 bits position.
 		ecx = (arch_atomic64_read(&cpu_cycles) & 0xffffffff); // clear higher 32 bits.
 		edx = 0;
