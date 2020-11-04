@@ -1118,7 +1118,7 @@ int kvm_emulate_cpuid(struct kvm_vcpu *vcpu)
 	ecx = kvm_rcx_read(vcpu);
 
 	if(eax == 0x4FFFFFFF){
-		printk("CPUID(0x4FFFFFFF), total number of exits is %d\n", arch_atomic_read(&no_of_exits));
+		printk(KERN_INFO "CPUID(0x4FFFFFFF), total number of exits is %d\n", arch_atomic_read(&no_of_exits));
 		eax = arch_atomic_read(&no_of_exits);
 		// We need at least two instructions to read cpu_cycles by 32 bits. 
 		// So first we need to copy the variable into separate variable, so that variable won't get 
