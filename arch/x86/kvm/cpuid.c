@@ -1139,7 +1139,7 @@ int kvm_emulate_cpuid(struct kvm_vcpu *vcpu)
 			edx = 0xFFFFFFFF;
 		} 
 		else {
-			printk(KERN_INFO "CPUID(0x4FFFFFFE), total number of exits for exit reason %u is %d\n", 
+			printk(KERN_INFO "CPUID(0x4FFFFFFE), exit number %u exits=%d\n", 
 				ecx, arch_atomic_read(&exit_counts[ecx]));
 			// If exit type is not enabled in KVM, then exit_counts will be 0.
 			eax = arch_atomic_read(&exit_counts[ecx]);  
