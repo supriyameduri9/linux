@@ -37,6 +37,9 @@ atomic_t no_of_exits = ATOMIC_INIT(0);
 EXPORT_SYMBOL(no_of_exits);
 atomic64_t cpu_cycles = ATOMIC64_INIT(0);
 EXPORT_SYMBOL(cpu_cycles);
+// Reference for designated initializers: http://gcc.gnu.org/onlinedocs/gcc/Designated-Inits.html
+atomic_t exit_counts[69] = { [0 ... 68] = ATOMIC_INIT(0) };
+EXPORT_SYMBOL(exit_counts);
 
 static u32 xstate_required_size(u64 xstate_bv, bool compacted)
 {
@@ -1127,6 +1130,21 @@ int kvm_emulate_cpuid(struct kvm_vcpu *vcpu)
 		ebx = (cpu_cycles_copy >> 32);;	// move higher 32 bits to lower 32 bits position.
 		ecx = (cpu_cycles_copy & 0xffffffff); // clear higher 32 bits.
 		edx = 0;
+	}
+	else if(eax == 0x4FFFFFFE){
+		// check to skip exit reasons that are not defined by the SDM.
+		if (ecx < 0 || ecx > 68 || ecx == 35 || ecx == 38 || ecx == 42 || ecx ==  65) {
+			printk(KERN_INFO "Exit type %u is not defined by the SDM\n", ecx);
+			eax = ebx = ecx = 0;
+			edx = 0xFFFFFFFF;
+		} 
+		else {
+			printk(KERN_INFO "CPUID(0x4FFFFFFE), total number of exits for exit reason %u is %d\n", 
+				ecx, arch_atomic_read(&exit_counts[ecx]));
+			// If exit type is not enabled in KVM, then exit_counts will be 0.
+			eax = arch_atomic_read(&exit_counts[ecx]);  
+			ebx = ecx = edx = 0;
+		}
 	}
 	else{
 		kvm_cpuid(vcpu, &eax, &ebx, &ecx, &edx, false);
